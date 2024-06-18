@@ -130,7 +130,7 @@ function App() {
   // }
 
   return (
-    <div className='flex flex-col min-h-screen w-3/5 mx-auto'>
+    <div className='flex flex-col min-h-screen mx-auto'>
       <Nav />
       {/* Display */}
       <main className='flex-1 p-4 flex mb-4'>
