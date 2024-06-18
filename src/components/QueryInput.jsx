@@ -31,8 +31,10 @@ const QueryInput = () => {
             ref={inputRef}
             onChange={(e) => handleUserQuery(e)}
           />
-          {console.log(query)}
-          <button className='p-2 bg-emerald-600 text-white rounded-r'>
+          <button
+            className='p-2 bg-emerald-600 text-white rounded-r'
+            onClick={() => handleRunPython(query)}
+          >
             <svg
               xmlns='http://www.w3.org/2000/svg'
               className='h-6 w-6'

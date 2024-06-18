@@ -1,9 +1,9 @@
 import { useState, useRef } from "react";
-import { Nav, Display, QueryInput, Options } from "./components";
+import { Nav, Display, QueryInput, QueryBubble, Options } from "./components";
 import { toast } from "react-toastify";
 import { ClipLoader } from "react-spinners";
 import { FiRefreshCw } from "react-icons/fi";
-import { FaThumbsUp } from "react-icons/fa";
+import { FaThumbsUp, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import Table from "./components/Table";
 
 function App() {
@@ -14,10 +14,28 @@ function App() {
   const [thumbsUpAnimation, setThumbsUpAnimation] = useState(false);
   const [data, setData] = useState([]);
 
-  // test
-  const [responseText, setResponseText] = useState("");
-  const [dataFrame, setDataFrame] = useState(null);
-  // test
+  // show table and split data
+  const [showTable, setShowTable] = useState(false);
+
+  const toggleTableVisibility = () => {
+    setShowTable((prevShowTable) => !prevShowTable);
+  };
+
+  const parseBackendResponse = (response) => {
+    const parts = response
+      .trim()
+      .split(
+        "--------------------------------------------------------------------------------"
+      );
+    const tableData = parts[0].trim();
+    const analysisData = parts[1].trim();
+    return { tableData, analysisData };
+  };
+
+  const { tableData, analysisData } = analysis
+    ? parseBackendResponse(analysis)
+    : { tableData: null, analysisData: null };
+  // show table
 
   const inputRef = useRef(null);
 
@@ -54,25 +72,22 @@ function App() {
     setData([]);
 
     try {
-      const response = await fetch("http://127.0.0.1:3001/run-python", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ query }),
-      });
+      const response = await fetch(
+        "https://flask-backend-jthp5ztqva-uc.a.run.app/run-python",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ query }),
+        }
+      );
       const data = await response.json();
       console.log("Data from Python file:", data);
 
       if (response.ok) {
         setAnalysis(data.result);
-
         console.log("type of response", typeof data.result);
-
-        // table
-        const parsedData = parseResponse(data.result);
-        setData(parsedData);
-        // table
 
         toast.dismiss(inProgressToastId);
         toast.success("Analysis Generated!");
@@ -92,27 +107,27 @@ function App() {
     }
   };
 
-  function parseResponse(response) {
-    if (typeof response !== "string") {
-      throw new TypeError("Response is not a string");
-    }
+  // function parseResponse(response) {
+  //   if (typeof response !== "string") {
+  //     throw new TypeError("Response is not a string");
+  //   }
 
-    const lines = response.split("\n").filter((line) => line.includes("|"));
-    const headerLine = lines.find(
-      (line) => line.includes("year") || line.includes("customercode")
-    );
-    const headers = headerLine.split("|").map((header) => header.trim());
+  //   const lines = response.split("\n").filter((line) => line.includes("|"));
+  //   const headerLine = lines.find(
+  //     (line) => line.includes("year") || line.includes("customercode")
+  //   );
+  //   const headers = headerLine.split("|").map((header) => header.trim());
 
-    const data = lines.slice(lines.indexOf(headerLine) + 1).map((line) => {
-      const values = line.split("|").map((value) => value.trim());
-      return headers.reduce((obj, header, index) => {
-        obj[header] = values[index];
-        return obj;
-      }, {});
-    });
+  //   const data = lines.slice(lines.indexOf(headerLine) + 1).map((line) => {
+  //     const values = line.split("|").map((value) => value.trim());
+  //     return headers.reduce((obj, header, index) => {
+  //       obj[header] = values[index];
+  //       return obj;
+  //     }, {});
+  //   });
 
-    return data;
-  }
+  //   return data;
+  // }
 
   return (
     <div className='flex flex-col min-h-screen w-3/5 mx-auto'>
@@ -126,8 +141,9 @@ function App() {
         ) : (
           analysis && (
             <div className='relative flex flex-col items-start space-y-4 w-full'>
+              <QueryBubble query={query} />
               <div className='bg-gray-100 p-4 rounded-lg shadow-md w-full relative'>
-                <p className='text-gray-900'>{analysis}</p>
+                <p className='text-gray-900'>{analysisData}</p>
                 <div className='absolute -bottom-4 right-2 flex space-x-2'>
                   <button
                     className='px-1 py-1 text-sm flex items-center justify-center transform hover:scale-125 transition-transform'
@@ -144,23 +160,49 @@ function App() {
                     <FaThumbsUp />
                   </button>
                 </div>
-                <Table data={data} />
               </div>
+              <button
+                className=' px-4 py-1 text-sm bg-emerald-600 text-white rounded-md'
+                onClick={toggleTableVisibility}
+              >
+                {showTable ? (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    Hide Table <FaChevronUp />
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    View Table <FaChevronDown />
+                  </span>
+                )}
+              </button>
+              {showTable && (
+                <div className='bg-gray-100 p-4 rounded-lg shadow-md w-full relative'>
+                  <pre className='text-gray-900 whitespace-pre-wrap'>
+                    {tableData}
+                  </pre>
+                </div>
+              )}
             </div>
           )
         )}
-        {/* {loading ? (
-          <div className='justify-center items-center m-auto'>
-            <ClipLoader color={"#36d7b7"} loading={loading} size={50} />
-          </div>
-        ) : (
-          <Table data={data} />
-        )} */}
       </main>
       {/* Display */}
+      {/* Input */}
       <div className='border-5 border-red-400s'>
         <footer className='p-4 border-t border-black-300 flex flex-col items-center'>
-          <Options setQuery={setQuery} focusInput={focusInput} />
+          {/* <Options setQuery={setQuery} focusInput={focusInput} /> */}
           <div className='w-full flex'>
             <input
               type='text'
@@ -192,6 +234,7 @@ function App() {
           </div>
         </footer>
       </div>
+      {/* Input */}
     </div>
   );
 }
